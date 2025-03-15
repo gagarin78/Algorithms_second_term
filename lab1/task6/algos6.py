@@ -27,7 +27,6 @@ def main():
     output_filename = 'output.txt'
     write_result_to_file(output_filename, result)
     
-    # Вывод информации о выполнении
     result_size = sys.getsizeof(result)
     execution_time = time.time() - start_time
     print(f"Наибольшее число: {result}")
