@@ -1,57 +1,76 @@
-import time
 import sys
+import time
+import tracemalloc
 
-def can_eat_apples(n, s, apples):
-    good_apples = []
-    bad_apples = []
-    
-    for idx, (a, b) in enumerate(apples, 1):
-        if b > a:
-            good_apples.append((a, b, idx))
-        else:
-            bad_apples.append((a, b, idx))
-    
-    bad_apples.sort(key=lambda x: x[0] - x[1])
-    
-    for a, b, idx in good_apples:
-        s -= a
-        if s <= 0:
-            return -1
-        s += b
-    
-    for a, b, idx in bad_apples:
-        s -= a
-        if s <= 0:
-            return -1
-        s += b
-    
-    order = [idx for _, _, idx in good_apples + bad_apples]
-    return order
+class TreeNode:
+    def __init__(self, key):
+        self.key = key
+        self.left = None
+        self.right = None
+
+def build_tree(n, nodes):
+    tree = [None] * (n + 1)
+    for i in range(1, n + 1):
+        key, left, right = nodes[i - 1]
+        if tree[i] is None:
+            tree[i] = TreeNode(key)
+        if left != 0:
+            if tree[left] is None:
+                tree[left] = TreeNode(None)  # Инициализация с None
+            tree[i].left = tree[left]
+        if right != 0:
+            if tree[right] is None:
+                tree[right] = TreeNode(None)  # Инициализация с None
+            tree[i].right = tree[right]
+    return tree[1]
+
+def is_bst(root, min_val=float('-inf'), max_val=float('inf')):
+    if root is None or root.key is None:
+        return True
+    if not (min_val < root.key < max_val):
+        return False
+    return (is_bst(root.left, min_val, root.key) and
+            is_bst(root.right, root.key, max_val))
 
 def main():
+    # Начинаем замер памяти
+    tracemalloc.start()
     start_time = time.time()
+
+    with open("input.txt", "r") as f:
+        input_data = f.read().split()
     
-    with open('input.txt', 'r') as file:
-        n, s = map(int, file.readline().split())
-        apples = []
-        for _ in range(n):
-            a, b = map(int, file.readline().split())
-            apples.append((a, b))
+    ptr = 0
+    n = int(input_data[ptr])
+    ptr += 1
+    nodes = []
+    for _ in range(n):
+        key = int(input_data[ptr])
+        left = int(input_data[ptr + 1])
+        right = int(input_data[ptr + 2])
+        nodes.append((key, left, right))
+        ptr += 3
     
-    result = can_eat_apples(n, s, apples)
+    if n == 0:
+        with open("output.txt", "w") as f:
+            f.write("YES\n")
+        return
     
-    with open('output.txt', 'w') as file:
-        if result == -1:
-            file.write("-1")
+    root = build_tree(n, nodes)
+    
+    with open("output.txt", "w") as f:
+        if is_bst(root):
+            f.write("YES\n")
         else:
-            file.write(" ".join(map(str, result)))
+            f.write("NO\n")
     
-    result_size = sys.getsizeof(result)
-    execution_time = time.time() - start_time
-    
-    print(f"Результат: {result}")
-    print(f"Общий размер памяти: {result_size} байт")
-    print(f"Время выполнения: {execution_time:.6f} секунд")
+    # Замер времени и памяти
+    end_time = time.time()
+    current, peak = tracemalloc.get_traced_memory()
+    tracemalloc.stop()
+
+    print(f"Время выполнения: {end_time - start_time:.6f} секунд")
+    print(f"Пиковое использование памяти: {peak / 1024 / 1024:.6f} МБ")
 
 if __name__ == "__main__":
     main()

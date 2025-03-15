@@ -1,63 +1,82 @@
-import time
 import sys
+import tracemalloc
+import time
 
-def read_numbers_from_file(filename):
-    with open(filename, 'r') as file:
-        lines = file.readlines()
-        N = int(lines[0].strip())
-        A1 = int(lines[1].strip())
-        A2 = int(lines[2].strip())
-        A3 = int(lines[3].strip())
-        A4 = int(lines[4].strip())
-        A5 = int(lines[5].strip())
-        A6 = int(lines[6].strip())
-        A7 = int(lines[7].strip())
-    return N, A1, A2, A3, A4, A5, A6, A7
+class TreeNode:
+    def __init__(self, key):
+        self.key = key
+        self.left = None
+        self.right = None
+        self.parent = None
 
-def write_result_to_file(filename, result):
-    with open(filename, 'w') as file:
-        file.write(str(result))
+def build_tree(n, nodes):
+    tree = [None] * (n + 1)
+    for i in range(1, n + 1):
+        key, left, right = nodes[i - 1]
+        if tree[i] is None:
+            tree[i] = TreeNode(key)
+        else:
+            tree[i].key = key
+        if left != 0:
+            tree[left] = TreeNode(None)
+            tree[left].parent = tree[i]
+            tree[i].left = tree[left]
+        if right != 0:
+            tree[right] = TreeNode(None)
+            tree[right].parent = tree[i]
+            tree[i].right = tree[right]
+    return tree[1]
 
-def minimal_printing_cost(N, A1, A2, A3, A4, A5, A6, A7):
-    tariffs = [
-        (1, A1),
-        (10, A2),
-        (100, A3),
-        (1000, A4),
-        (10000, A5),
-        (100000, A6),
-        (1000000, A7)
-    ]
-    
-    dp = [float('inf')] * (N + 1)
-    dp[0] = 0
-    
-    for i in range(1, N + 1):
-        for count, cost in tariffs:
-            if i >= count:
-                dp[i] = min(dp[i], dp[i - count] + cost)
-            else:
-                dp[i] = min(dp[i], cost)
-    
-    return dp[N]
+def delete_subtree(root, key):
+    if root is None:
+        return root
+    if root.key == key:
+        return None
+    if key < root.key:
+        root.left = delete_subtree(root.left, key)
+    else:
+        root.right = delete_subtree(root.right, key)
+    return root
+
+def count_nodes(root):
+    if root is None:
+        return 0
+    return 1 + count_nodes(root.left) + count_nodes(root.right)
 
 def main():
+    tracemalloc.start()
     start_time = time.time()
+
+    with open("input.txt", "r") as f:
+        input_data = f.read().split()
     
-    input_filename = 'input.txt'
-    N, A1, A2, A3, A4, A5, A6, A7 = read_numbers_from_file(input_filename)
+    ptr = 0
+    n = int(input_data[ptr])
+    ptr += 1
+    nodes = []
+    for _ in range(n):
+        key = int(input_data[ptr])
+        left = int(input_data[ptr + 1])
+        right = int(input_data[ptr + 2])
+        nodes.append((key, left, right))
+        ptr += 3
+    m = int(input_data[ptr])
+    ptr += 1
+    delete_keys = list(map(int, input_data[ptr:ptr + m]))
     
-    result = minimal_printing_cost(N, A1, A2, A3, A4, A5, A6, A7)
+    root = build_tree(n, nodes)
     
-    output_filename = 'output.txt'
-    write_result_to_file(output_filename, result)
+    with open("output.txt", "w") as f:
+        for key in delete_keys:
+            root = delete_subtree(root, key)
+            f.write(f"{count_nodes(root)}\n")
     
-    result_size = sys.getsizeof(result)
-    execution_time = time.time() - start_time
-    
-    print(f"Минимальная стоимость: {result}")
-    print(f"Общий размер памяти: {result_size} байт")
-    print(f"Время выполнения: {execution_time:.6f} секунд")
+    end_time = time.time()
+    current, peak = tracemalloc.get_traced_memory()
+    tracemalloc.stop()
+
+    print(f"Время выполнения: {end_time - start_time:.4f} секунд")
+    print(f"Пиковое использование памяти: {peak / 1024 / 1024:.4f} МБ")
 
 if __name__ == "__main__":
     main()
